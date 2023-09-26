@@ -366,7 +366,7 @@ class MaskedLinear(ReplacementModule):
         return int((m != 0).sum().item())
 
     def get_masked_weights_bias(self):
-        print("Debug: Inside get_masked_weights_bias method.")
+    #    print("Debug: Inside get_masked_weights_bias method.")
         threshold = self.get_context_data("threshold")
         mask = self.mask_module(self.weight, threshold)
     #    print(f"mask:{mask}")
