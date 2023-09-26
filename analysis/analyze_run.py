@@ -279,7 +279,7 @@ class ModelAnalysis:
         "cnn_dailymail": {"key": "eval_results.eval_rouge2", "files": ["eval_results"], "min": 18}
     }
     REFERENCE_MODELS = {
-        "squadv1":"csarron/bert-base-uncased-squad-v1",
+        "squadv1":"/exports/eddie/scratch/jhuang10/notebooks/movement_and_topK_checkoutpoints",
         "squadv2": "twmkn9/bert-base-uncased-squad2",
         "mnli":"textattack/bert-base-uncased-MNLI",
         "qqp": "textattack/bert-base-uncased-QQP",
@@ -296,7 +296,7 @@ class ModelAnalysis:
                  path,
                  output_file_name,
                  task,
-                 dataset_config_name = None,
+                 dataset_config_name = 'config.json',
                  force_speed = False,
                  prefixes = None,
                  exclude_non_matching_f1 = True):
@@ -415,7 +415,9 @@ class ModelAnalysis:
                     else:
                         print(f"PROCESSING {root_dir}")
 
+                    print("OK")
                     for name in root_dir.iterdir():
+                        print(name)
                         if self.check_prefix(name.name):
                             new_checkpoints = self.analyze_run(name.resolve(), force_speed=self.force_speed)
                             checkpoints.update(new_checkpoints)
@@ -463,7 +465,7 @@ if __name__ == "__main__":
     ma = ModelAnalysis(sys.argv[1],
                        sys.argv[2],
                        sys.argv[3],
-                       force_speed=False,
+                       force_speed=True,
                        prefixes = ["fine_tuned_", "hp_", "aws_",  "large_"],
                        exclude_non_matching_f1 = exclude)
     ma.run()

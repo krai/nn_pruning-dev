@@ -346,7 +346,6 @@ class MaskedLinear(ReplacementModule):
         assert isinstance(linear_module, nn.Linear)
         self.weight = linear_module.weight
         self.bias = linear_module.bias
-
         self.mask_module = MaskModule(mask_context_modules, args)
         if ampere_context_module is not None:
             self.ampere_module = AmpereMaskModule(ampere_context_module, args)
@@ -361,13 +360,16 @@ class MaskedLinear(ReplacementModule):
 
         self.col_additive_mask = col_additive_mask
 
+        self.mask_nnz = 0
+
     def nnz(self, m):
         return int((m != 0).sum().item())
 
     def get_masked_weights_bias(self):
+        print("Debug: Inside get_masked_weights_bias method.")
         threshold = self.get_context_data("threshold")
         mask = self.mask_module(self.weight, threshold)
-
+    #    print(f"mask:{mask}")
         if mask is not None:
             if self.row_additive_mask is not None:
                 row_mask = self.row_additive_mask
@@ -381,6 +383,7 @@ class MaskedLinear(ReplacementModule):
 
         if mask is not None:
             self.mask_nnz = self.nnz(mask)
+   #         print(f"mask_nnz{self.mask_nnz}")
         else:
             self.mask_nnz = self.weight.numel()
 
@@ -410,16 +413,33 @@ class MaskedLinear(ReplacementModule):
         return masked_weights, bias
 
     def forward(self, input):
+  #      print("Debug: Inside forward method.")
         masked_weights, bias = self.get_masked_weights_bias()
         # Compute output (linear layer) with masked weights
         return F.linear(input, masked_weights, bias)
 
+    #def get_sparsity_info(self):
+     #   if hasattr(self, 'mask_nnz'):
+      #      ret = {"numel": self.weight.numel(), "nnz": self.mask_nnz}
+       # else:
+        #    ret = {"numel": self.weight.numel(), "nnz": 0}
+        #if self.args.ampere_method != "disabled":
+         #   ret.update({"base_nnz": self.base_mask_nnz, "ampere_nnz": self.ampere_nnz})
+        #return ret
     def get_sparsity_info(self):
-        ret = {"numel": self.weight.numel(), "nnz": self.mask_nnz}
-
-        if self.args.ampere_method != "disabled":
-            ret.update({"base_nnz": self.base_mask_nnz, "ampere_nnz": self.ampere_nnz})
+ #       print("Debug: Inside get_sparsity_info method.")
+        if hasattr(self, 'mask_nnz'):
+            ret = {"numel": self.weight.numel(), "nnz": self.mask_nnz}
+        else:
+#            print("Debug: mask_nnz not set.")
+            ret = {"numel": self.weight.numel(), "nnz": 0}
         return ret
+   # def get_sparsity_info(self):
+   #     ret = {"numel": self.weight.numel(), "nnz": self.mask_nnz}
+
+   #     if self.args.ampere_method != "disabled":
+   #         ret.update({"base_nnz": self.base_mask_nnz, "ampere_nnz": self.ampere_nnz})
+   #     return ret
 
     def compile(self):
         masked_weights, bias = self.get_masked_weights_bias()
